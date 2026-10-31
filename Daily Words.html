@@ -1,0 +1,673 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Daily Words</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=Figtree:wght@400;500;600&family=Noto+Sans+Tamil:wght@400;600&family=Noto+Sans+Devanagari:wght@400;600&display=swap">
+<style>
+/* Layout: a sticky top bar (Day picker + Quiz) over one content area. Lessons read as a ruled table on wide screens and stack into cards on phones. */
+:root {
+  --bg: #F2F4F8;
+  --surface: #FFFFFF;
+  --ink: #12223A;
+  --muted: #5B6882;
+  --line: #D9DEE8;
+  --accent: #2D3FB8;
+  --accent-ink: #FFFFFF;
+  --soft: #E6EAFA;
+  --good: #1C7A45;
+  --good-bg: #E3F4EA;
+  --bad: #B3261E;
+  --bad-bg: #FBE7E5;
+  --en: #2D3FB8;
+  --ta: #B3261E;
+  --fr: #1B6FA8;
+  --hi: #A85F08;
+  --font-display: "Bricolage Grotesque", "Figtree", system-ui, sans-serif;
+  --font-body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-ta: "Noto Sans Tamil", "Figtree", system-ui, sans-serif;
+  --font-hi: "Noto Sans Devanagari", "Figtree", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0D1422; --surface: #151E31; --ink: #E8ECF5; --muted: #9AA6BF; --line: #26324A;
+    --accent: #8E9BFF; --accent-ink: #0D1422; --soft: #1E2A4A;
+    --good: #6FD39A; --good-bg: #153326; --bad: #FF8F86; --bad-bg: #3A1B1B;
+    --en: #9BA7FF; --ta: #FF8F86; --fr: #6DB7EE; --hi: #F0A64A;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0D1422; --surface: #151E31; --ink: #E8ECF5; --muted: #9AA6BF; --line: #26324A;
+  --accent: #8E9BFF; --accent-ink: #0D1422; --soft: #1E2A4A;
+  --good: #6FD39A; --good-bg: #153326; --bad: #FF8F86; --bad-bg: #3A1B1B;
+  --en: #9BA7FF; --ta: #FF8F86; --fr: #6DB7EE; --hi: #F0A64A;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 30; background: var(--bg); }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.5;
+  padding-block: 0 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+button, select, input { font: inherit; color: inherit; }
+.wrap { max-width: 1080px; margin: 0 auto; display: grid; gap: 24px; padding-top: 24px; }
+
+/* top bar */
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: var(--bg); border-bottom: 1px solid var(--line); margin-inline: calc(-1 * max(16px, env(safe-area-inset-left, 0px))) calc(-1 * max(16px, env(safe-area-inset-right, 0px))); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.topin { max-width: 1080px; margin: 0 auto; position: relative; display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; padding-block: 10px; }
+.brand { font-family: var(--font-display); font-weight: 700; font-size: 1.25rem; margin-right: auto; }
+.pill {
+  cursor: pointer; border: 1.5px solid var(--accent); color: var(--accent); background: transparent;
+  padding: 8px 16px; border-radius: 999px; min-height: 42px; font-weight: 600; font-size: 15px;
+}
+.pill:hover { background: var(--soft); }
+.pill.solid, .pill[aria-pressed="true"], .pill[aria-current="page"] { background: var(--accent); color: var(--accent-ink); }
+.pill:focus-visible, .spk:focus-visible, .dbtn:focus-visible, .opt:focus-within { outline: 3px solid var(--accent); outline-offset: 2px; }
+.panel {
+  position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 25;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px;
+  max-height: min(65vh, 560px); overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,.18);
+}
+.panel h3 { margin: 0 0 4px; font-size: 14px; }
+.panel p { margin: 0 0 12px; color: var(--muted); font-size: 13.5px; }
+.days { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 8px; }
+.dbtn {
+  cursor: pointer; border: 1px solid var(--line); background: transparent; border-radius: 10px; padding: 8px 4px;
+  display: grid; gap: 0; justify-items: center; min-height: 56px; min-width: 0;
+}
+.dbtn b { font-size: 1.05rem; font-variant-numeric: tabular-nums; }
+.dbtn small { font-size: 11px; color: var(--muted); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dbtn.has { background: var(--soft); border-color: transparent; }
+.dbtn.has small { color: var(--accent); font-weight: 600; }
+.dbtn.none { color: var(--muted); }
+.dbtn[aria-current="true"] { outline: 2px solid var(--accent); }
+
+h1 { font-family: var(--font-display); font-size: clamp(2rem, 6vw, 3rem); line-height: 1.05; margin: 0; text-wrap: balance; letter-spacing: -.01em; }
+h2 { font-family: var(--font-display); font-size: 1.4rem; margin: 0 0 12px; text-wrap: balance; }
+.kicker { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.sub { margin: 0; color: var(--muted); max-width: 62ch; }
+header.hd { display: grid; gap: 12px; }
+.bar { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; }
+.voices { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
+.chip { font-size: 12.5px; padding: 4px 10px; border-radius: 999px; background: var(--soft); white-space: nowrap; }
+.chip.off { background: transparent; border: 1px dashed var(--muted); color: var(--muted); }
+
+/* lesson table */
+.sheet { display: grid; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.row { display: grid; grid-template-columns: 2.6rem 1.15fr .8fr 1.2fr 1.2fr 1.2fr; gap: 0 12px; padding: 14px 16px; align-items: center; border-top: 1px solid var(--line); }
+.row:first-child { border-top: 0; }
+.head { background: var(--soft); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; font-weight: 600; padding-block: 10px; }
+.head span:nth-child(2) { color: var(--en); } .head span:nth-child(4) { color: var(--ta); }
+.head span:nth-child(5) { color: var(--fr); } .head span:nth-child(6) { color: var(--hi); }
+.sl { font-variant-numeric: tabular-nums; color: var(--muted); font-weight: 600; }
+.cell { display: grid; grid-template-columns: auto 1fr; gap: 0 10px; align-items: center; min-width: 0; }
+.cell::before { content: attr(data-label); grid-column: 1 / -1; display: none; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; font-weight: 600; margin-bottom: 4px; }
+.cell[data-k="en"]::before { color: var(--en); } .cell[data-k="ta"]::before { color: var(--ta); }
+.cell[data-k="fr"]::before { color: var(--fr); } .cell[data-k="hi"]::before { color: var(--hi); }
+.txt { min-width: 0; overflow-wrap: anywhere; }
+.w { font-weight: 600; font-size: 1.05rem; line-height: 1.3; }
+.p { font-size: 13.5px; color: var(--muted); }
+[lang="ta"] .w, [lang="ta"].big { font-family: var(--font-ta); }
+[lang="hi"] .w, [lang="hi"].big { font-family: var(--font-hi); }
+.syl { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 14px; }
+.syl b { color: var(--ink); font-weight: 600; }
+.spk { width: 40px; height: 40px; border-radius: 50%; border: 0; cursor: pointer; flex: none; display: grid; place-items: center; background: var(--soft); color: var(--accent); }
+.spk:hover { background: var(--accent); color: var(--accent-ink); }
+.spk svg { width: 20px; height: 20px; }
+.spk.playing { background: var(--accent); color: var(--accent-ink); animation: pulse 1s ease-in-out infinite; }
+@keyframes pulse { 50% { transform: scale(1.1); } }
+@media (prefers-reduced-motion: reduce) { .spk.playing { animation: none; } }
+
+.sentences { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 12px; }
+.sent { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; display: grid; grid-template-columns: auto 1fr; gap: 0 12px; align-items: start; min-width: 0; }
+.sent .lab { grid-column: 1 / -1; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; font-weight: 600; margin-bottom: 6px; }
+.sent .w { font-weight: 500; }
+.sent .m { color: var(--muted); font-size: 14px; }
+.en-c { color: var(--en); } .ta-c { color: var(--ta); } .fr-c { color: var(--fr); } .hi-c { color: var(--hi); }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: grid; gap: 14px; min-width: 0; }
+.pager { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+
+/* quiz */
+.setup { display: grid; gap: 18px; }
+.group { display: grid; gap: 8px; }
+.group > .lbl { font-size: 13px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+select { background: var(--surface); border: 1.5px solid var(--line); border-radius: 10px; padding: 9px 12px; min-height: 42px; max-width: 100%; }
+.qcard { border: 1px solid var(--line); border-radius: 14px; background: var(--surface); padding: 16px; display: grid; gap: 12px; min-width: 0; margin: 0; }
+.qmeta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 12.5px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
+.qmeta .tag { padding: 3px 10px; border-radius: 999px; background: var(--soft); }
+.qprompt { font-size: 1.05rem; font-weight: 500; }
+.big { display: inline-block; font-size: 1.7rem; font-weight: 600; line-height: 1.25; margin-right: 10px; vertical-align: middle; }
+.opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 8px; }
+.opt { display: flex; gap: 10px; align-items: center; border: 1.5px solid var(--line); border-radius: 10px; padding: 10px 12px; cursor: pointer; min-width: 0; overflow-wrap: anywhere; }
+.opt:has(input:checked) { border-color: var(--accent); background: var(--soft); }
+.opt input { accent-color: var(--accent); width: 18px; height: 18px; flex: none; }
+input[type="text"] { width: 100%; max-width: 360px; background: var(--surface); border: 1.5px solid var(--line); border-radius: 10px; padding: 10px 12px; min-height: 44px; }
+.mrows { display: grid; gap: 8px; }
+.mrow { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; align-items: center; }
+.mrow .big { font-size: 1.25rem; }
+.score { font-family: var(--font-display); font-size: clamp(2.6rem, 10vw, 4rem); font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+.langs { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 10px; }
+.lscore { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: grid; gap: 6px; }
+.lscore b { font-size: 1.2rem; font-variant-numeric: tabular-nums; }
+.meter { height: 8px; border-radius: 99px; background: var(--soft); overflow: hidden; }
+.meter i { display: block; height: 100%; background: var(--accent); }
+.rev { border-radius: 12px; padding: 12px 14px; display: grid; gap: 4px; border: 1px solid var(--line); min-width: 0; overflow-wrap: anywhere; }
+.rev.ok { background: var(--good-bg); border-color: transparent; }
+.rev.no { background: var(--bad-bg); border-color: transparent; }
+.rev .st { font-weight: 700; font-size: 13px; letter-spacing: .05em; text-transform: uppercase; }
+.rev.ok .st { color: var(--good); } .rev.no .st { color: var(--bad); }
+.rev .ex { color: var(--muted); font-size: 14.5px; }
+ul.tips { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+
+.toast { position: fixed; left: max(16px, env(safe-area-inset-left, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); margin: 0 auto; max-width: 520px; background: var(--ink); color: var(--bg); padding: 12px 16px; border-radius: 12px; font-size: 14px; box-shadow: 0 6px 24px rgba(0,0,0,.25); z-index: 40; }
+
+@media (max-width: 860px) {
+  .head { display: none; }
+  .row { grid-template-columns: 2rem 1fr; gap: 14px 10px; padding: 16px; align-items: start; }
+  .row > .cell, .row > .syl { grid-column: 2; }
+  .row > .sl { grid-column: 1; grid-row: 1; }
+  .cell::before { display: block; }
+  .syl::before { content: "Syllables"; display: block; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; font-weight: 600; margin-bottom: 2px; }
+}
+</style>
+
+<div class="top">
+  <div class="topin">
+    <div class="brand">Daily Words</div>
+    <button class="pill" id="pickBtn" type="button" aria-expanded="false" aria-controls="pickPanel">Day 1 · School ▾</button>
+    <button class="pill" id="quizBtn" type="button">Quiz</button>
+    <div class="panel" id="pickPanel" hidden>
+      <h3>Choose a day</h3>
+      <p id="pickNote"></p>
+      <div class="days" id="days"></div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap" id="view"></div>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script>
+var $ = function (id) { return document.getElementById(id); };
+var ORDER = ["en", "ta", "fr", "hi"];
+var LANGS = {
+  en: { name: "English", tag: "en-IN" },
+  ta: { name: "Tamil",   tag: "ta-IN" },
+  fr: { name: "French",  tag: "fr-FR" },
+  hi: { name: "Hindi",   tag: "hi-IN" }
+};
+var TOTAL_DAYS = 100;
+
+/* ---------- lesson data: add new days here ---------- */
+var DAYS = {
+  1: { theme: "School", words: [
+    { en: "School",   syl: "school", n: 1,    ta: ["பள்ளி", "PAL-li"],          fr: ["école", "ay-KOL"],                hi: ["विद्यालय", "vid-yaa-LAY"] },
+    { en: "Teacher",  syl: "teach-er", n: 2,  ta: ["ஆசிரியர்", "AA-si-ri-yar"],  fr: ["professeur", "pro-fe-SEUR"],      hi: ["शिक्षक", "SHIK-shak"] },
+    { en: "Book",     syl: "book", n: 1,      ta: ["புத்தகம்", "PUT-ta-gam"],    fr: ["livre", "LEE-vr"],                hi: ["किताब", "ki-TAAB"] },
+    { en: "Friend",   syl: "friend", n: 1,    ta: ["நண்பன்", "NAN-ban"],         fr: ["ami", "a-MEE"],                   hi: ["दोस्त", "DOST"] },
+    { en: "Water",    syl: "wa-ter", n: 2,    ta: ["தண்ணீர்", "than-NEER"],      fr: ["eau", "OH"],                      hi: ["पानी", "PAA-nee"] },
+    { en: "Library",  syl: "li-brar-y", n: 3, ta: ["நூலகம்", "NOO-la-gam"],      fr: ["bibliothèque", "bee-blee-o-TEK"], hi: ["पुस्तकालय", "pus-tak-aa-LAY"] },
+    { en: "Pencil",   syl: "pen-cil", n: 2,   ta: ["பென்சில்", "PEN-sil"],       fr: ["crayon", "kray-ON"],              hi: ["पेंसिल", "PEN-sil"] },
+    { en: "Lesson",   syl: "les-son", n: 2,   ta: ["பாடம்", "PAA-dam"],          fr: ["leçon", "le-SON"],                hi: ["पाठ", "PAATH"] },
+    { en: "Question", syl: "ques-tion", n: 2, ta: ["கேள்வி", "KEL-vi"],          fr: ["question", "kes-TYON"],           hi: ["प्रश्न", "PRASHN"] },
+    { en: "Morning",  syl: "morn-ing", n: 2,  ta: ["காலை", "KAA-lai"],           fr: ["matin", "ma-TAN"],                hi: ["सुबह", "su-BAH"] }
+  ], sentences: [
+    { k: "en", text: "The teacher asked a question in the morning lesson.", note: "" },
+    { k: "ta", text: "நான் பள்ளிக்கு செல்கிறேன்.", note: "Naan palli-kku selgiren. = I go to school." },
+    { k: "fr", text: "J'ai un livre.", note: "zhay un LEE-vr = I have a book." },
+    { k: "hi", text: "मेरा दोस्त पानी पीता है।", note: "Mera dost paani peeta hai. = My friend drinks water." }
+  ] },
+  2: { theme: "Food", words: [
+    { en: "Rice",      syl: "rice", n: 1,        ta: ["அரிசி", "A-ri-si"],              fr: ["riz", "REE"],                     hi: ["चावल", "CHAA-wal"] },
+    { en: "Milk",      syl: "milk", n: 1,        ta: ["பால்", "PAAL"],                  fr: ["lait", "LEH"],                    hi: ["दूध", "DOODH"] },
+    { en: "Bread",     syl: "bread", n: 1,       ta: ["ரொட்டி", "ROT-ti"],              fr: ["pain", "PAN"],                    hi: ["ब्रेड", "BRED"] },
+    { en: "Fruit",     syl: "fruit", n: 1,       ta: ["பழம்", "PA-zham"],               fr: ["fruit", "FRWEE"],                 hi: ["फल", "FAL"] },
+    { en: "Vegetable", syl: "veg-e-ta-ble", n: 4, ta: ["காய்கறி", "KAAY-ka-ri"],        fr: ["légume", "lay-GUM"],              hi: ["सब्ज़ी", "SAB-zee"] },
+    { en: "Breakfast", syl: "break-fast", n: 2, ta: ["காலை உணவு", "KAA-lai U-na-vu"],  fr: ["petit-déjeuner", "puh-TEE day-zhuh-NAY"], hi: ["नाश्ता", "NAASH-taa"] },
+    { en: "Sugar",     syl: "su-gar", n: 2,      ta: ["சர்க்கரை", "SAR-kka-rai"],       fr: ["sucre", "SUKR"],                  hi: ["चीनी", "CHEE-nee"] },
+    { en: "Salt",      syl: "salt", n: 1,        ta: ["உப்பு", "UP-pu"],                fr: ["sel", "SEL"],                     hi: ["नमक", "na-MAK"] },
+    { en: "Egg",       syl: "egg", n: 1,         ta: ["முட்டை", "MUT-tai"],             fr: ["œuf", "UHF"],                     hi: ["अंडा", "AN-daa"] },
+    { en: "Hunger",    syl: "hun-ger", n: 2,     ta: ["பசி", "PA-si"],                  fr: ["faim", "FAN"],                    hi: ["भूख", "BHOOKH"] }
+  ], sentences: [
+    { k: "en", text: "I drink milk and eat rice.", note: "" },
+    { k: "ta", text: "நான் பால் குடிக்கிறேன்.", note: "Naan paal kudikkiren. = I drink milk." },
+    { k: "fr", text: "Je mange du pain.", note: "zhuh MONZH dew PAN = I eat bread." },
+    { k: "hi", text: "मुझे भूख लगी है।", note: "Mujhe bhookh lagi hai. = I am hungry." }
+  ] },
+  3: { theme: "Family", words: [
+    { en: "Mother",      syl: "moth-er", n: 2,       ta: ["அம்மா", "AM-maa"],            fr: ["mère", "MAIR"],         hi: ["माँ", "MAAN"] },
+    { en: "Father",      syl: "fa-ther", n: 2,       ta: ["அப்பா", "AP-paa"],            fr: ["père", "PAIR"],         hi: ["पिता", "pi-TAA"] },
+    { en: "Brother",     syl: "broth-er", n: 2,      ta: ["சகோதரன்", "SA-ko-da-ran"],    fr: ["frère", "FRAIR"],       hi: ["भाई", "BHAA-ee"] },
+    { en: "Sister",      syl: "sis-ter", n: 2,       ta: ["சகோதரி", "SA-ko-da-ri"],      fr: ["sœur", "SUR"],          hi: ["बहन", "ba-HAN"] },
+    { en: "Grandmother", syl: "grand-moth-er", n: 3, ta: ["பாட்டி", "PAAT-ti"],          fr: ["grand-mère", "gron-MAIR"], hi: ["दादी", "DAA-dee"] },
+    { en: "Grandfather", syl: "grand-fa-ther", n: 3, ta: ["தாத்தா", "TAAT-taa"],         fr: ["grand-père", "gron-PAIR"], hi: ["दादा", "DAA-daa"] },
+    { en: "Family",      syl: "fam-i-ly", n: 3,      ta: ["குடும்பம்", "KU-dum-bam"],    fr: ["famille", "fa-MEE-y"],  hi: ["परिवार", "pa-ri-VAAR"] },
+    { en: "House",       syl: "house", n: 1,         ta: ["வீடு", "VEE-du"],             fr: ["maison", "may-ZON"],    hi: ["घर", "GHAR"] },
+    { en: "Baby",        syl: "ba-by", n: 2,         ta: ["குழந்தை", "KU-zhan-dhai"],    fr: ["bébé", "bay-BAY"],      hi: ["बच्चा", "BACH-chaa"] },
+    { en: "Uncle",       syl: "un-cle", n: 2,        ta: ["மாமா", "MAA-maa"],            fr: ["oncle", "ON-kl"],       hi: ["चाचा", "CHAA-chaa"] }
+  ], sentences: [
+    { k: "en", text: "My grandmother lives in our house.", note: "" },
+    { k: "ta", text: "என் அம்மா வீட்டில் இருக்கிறார்.", note: "En amma veettil irukkiraar. = My mother is at home." },
+    { k: "fr", text: "Ma mère est à la maison.", note: "ma MAIR ay ta la may-ZON = My mother is at home." },
+    { k: "hi", text: "मेरा परिवार बड़ा है।", note: "Mera parivaar bada hai. = My family is big." }
+  ] },
+  4: { theme: "Nature", words: [
+    { en: "Tree",     syl: "tree", n: 1,      ta: ["மரம்", "MA-ram"],        fr: ["arbre", "ARBR"],            hi: ["पेड़", "PED"] },
+    { en: "Flower",   syl: "flow-er", n: 2,   ta: ["பூ", "POO"],             fr: ["fleur", "FLUR"],            hi: ["फूल", "FOOL"] },
+    { en: "River",    syl: "riv-er", n: 2,    ta: ["ஆறு", "AA-ru"],          fr: ["rivière", "ree-vee-AIR"],   hi: ["नदी", "na-DEE"] },
+    { en: "Mountain", syl: "moun-tain", n: 2, ta: ["மலை", "MA-lai"],         fr: ["montagne", "mon-TAN-y"],    hi: ["पहाड़", "pa-HAAR"] },
+    { en: "Sun",      syl: "sun", n: 1,       ta: ["சூரியன்", "SOO-ri-yan"], fr: ["soleil", "so-LAY"],         hi: ["सूरज", "SOO-raj"] },
+    { en: "Moon",     syl: "moon", n: 1,      ta: ["நிலா", "NI-laa"],        fr: ["lune", "LUN"],              hi: ["चाँद", "CHAAND"] },
+    { en: "Rain",     syl: "rain", n: 1,      ta: ["மழை", "MA-zhai"],        fr: ["pluie", "PLWEE"],           hi: ["बारिश", "BAA-rish"] },
+    { en: "Sky",      syl: "sky", n: 1,       ta: ["வானம்", "VAA-nam"],      fr: ["ciel", "SYEL"],             hi: ["आसमान", "AA-sa-maan"] },
+    { en: "Bird",     syl: "bird", n: 1,      ta: ["பறவை", "PA-ra-vai"],     fr: ["oiseau", "wa-ZOH"],         hi: ["चिड़िया", "CHI-ri-yaa"] },
+    { en: "Forest",   syl: "for-est", n: 2,   ta: ["காடு", "KAA-du"],        fr: ["forêt", "fo-RAY"],          hi: ["जंगल", "JAN-gal"] }
+  ], sentences: [
+    { k: "en", text: "The bird sits on the tree.", note: "" },
+    { k: "ta", text: "மரத்தில் பறவை இருக்கிறது.", note: "Marathil paravai irukkirathu. = A bird is on the tree." },
+    { k: "fr", text: "Le soleil est dans le ciel.", note: "luh so-LAY ay don luh SYEL = The sun is in the sky." },
+    { k: "hi", text: "नदी पहाड़ से बहती है।", note: "Nadi pahaad se bahti hai. = The river flows from the mountain." }
+  ] },
+  5: { theme: "Body", words: [
+    { en: "Head",  syl: "head", n: 1,  ta: ["தலை", "TA-lai"],       fr: ["tête", "TET"],         hi: ["सिर", "SIR"] },
+    { en: "Eye",   syl: "eye", n: 1,   ta: ["கண்", "KAN"],          fr: ["œil", "UY"],           hi: ["आँख", "AANKH"] },
+    { en: "Ear",   syl: "ear", n: 1,   ta: ["காது", "KAA-du"],      fr: ["oreille", "o-RAY"],    hi: ["कान", "KAAN"] },
+    { en: "Nose",  syl: "nose", n: 1,  ta: ["மூக்கு", "MOOK-ku"],   fr: ["nez", "NAY"],          hi: ["नाक", "NAAK"] },
+    { en: "Mouth", syl: "mouth", n: 1, ta: ["வாய்", "VAAY"],        fr: ["bouche", "BOOSH"],     hi: ["मुँह", "MUNH"] },
+    { en: "Hand",  syl: "hand", n: 1,  ta: ["கை", "KAI"],           fr: ["main", "MAN"],         hi: ["हाथ", "HAATH"] },
+    { en: "Leg",   syl: "leg", n: 1,   ta: ["கால்", "KAAL"],        fr: ["jambe", "ZHONB"],      hi: ["पैर", "PAIR"] },
+    { en: "Heart", syl: "heart", n: 1, ta: ["இதயம்", "I-tha-yam"],  fr: ["cœur", "KUR"],         hi: ["दिल", "DIL"] },
+    { en: "Tooth", syl: "tooth", n: 1, ta: ["பல்", "PAL"],          fr: ["dent", "DON"],         hi: ["दाँत", "DAANT"] },
+    { en: "Hair",  syl: "hair", n: 1,  ta: ["முடி", "MU-di"],       fr: ["cheveux", "shuh-VUH"], hi: ["बाल", "BAAL"] }
+  ], sentences: [
+    { k: "en", text: "I touch my nose with my hand.", note: "" },
+    { k: "ta", text: "என் கை பெரியது.", note: "En kai periyathu. = My hand is big." },
+    { k: "fr", text: "J'ai mal à la tête.", note: "zhay MAL a la TET = I have a headache." },
+    { k: "hi", text: "मेरे दो हाथ हैं।", note: "Mere do haath hain. = I have two hands." }
+  ] }
+};
+
+Object.keys(DAYS).forEach(function (d) {
+  DAYS[d].words.forEach(function (w, i) { w.id = "d" + d + "-w" + (i + 1); });
+  DAYS[d].sentences.forEach(function (s, i) { s.id = "d" + d + "-s" + (i + 1); });
+});
+
+/* ---------- helpers ---------- */
+function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+function shuffle(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+function nat(w, L) { return L === "en" ? w.en : w[L][0]; }
+function pron(w, L) { return L === "en" ? w.syl : w[L][1]; }
+function norm(s) { return String(s || "").toLowerCase().replace(/œ/g, "oe").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9 ]/g, "").replace(/\s+/g, " ").trim(); }
+function addedDays() { return Object.keys(DAYS).map(Number).sort(function (a, b) { return a - b; }); }
+function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) {} return null; }
+
+var ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z" fill="currentColor"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>';
+function spk(text, k, label, aid) { return '<button class="spk" type="button" data-say="' + esc(text) + '" data-k="' + k + '"' + (aid ? ' data-audio="' + aid + '"' : '') + ' aria-label="' + esc(label || ("Hear " + LANGS[k].name + " word " + text)) + '">' + ICON + '</button>'; }
+
+/* ---------- speech ---------- */
+var synth = ("speechSynthesis" in window) ? window.speechSynthesis : null;
+var slow = false, toastTimer = null, current = null;
+function toast(msg) { var t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(function () { t.hidden = true; }, 4500); }
+function findVoice(tag) {
+  if (!synth) return null;
+  var vs = synth.getVoices() || [], want = tag.toLowerCase().replace("_", "-"), pre = want.split("-")[0], exact = null, loose = null;
+  for (var i = 0; i < vs.length; i++) {
+    var vl = (vs[i].lang || "").toLowerCase().replace("_", "-");
+    if (vl === want && !exact) exact = vs[i];
+    if (vl.split("-")[0] === pre && !loose) loose = vs[i];
+  }
+  return exact || loose;
+}
+function renderVoices() {
+  var box = $("voices"); if (!box) return;
+  if (!synth) { box.innerHTML = '<span class="chip off">Speech not supported in this browser</span>'; return; }
+  box.innerHTML = ORDER.map(function (k) { var ok = !!findVoice(LANGS[k].tag); return '<span class="chip' + (ok ? "" : " off") + '">' + LANGS[k].name + (ok ? " voice ready" : " voice missing") + '</span>'; }).join("");
+}
+function speakTts(text, k, btn) {
+  if (!synth) { toast("This browser cannot play speech. Try Chrome."); return; }
+  synth.cancel(); if (current) current.classList.remove("playing");
+  var l = LANGS[k], u = new SpeechSynthesisUtterance(text); u.lang = l.tag;
+  var v = findVoice(l.tag); if (v) u.voice = v;
+  u.rate = slow ? 0.6 : 0.9;
+  u.onstart = function () { btn.classList.add("playing"); current = btn; };
+  u.onend = u.onerror = function () { btn.classList.remove("playing"); };
+  if (!v) toast("No " + l.name + " voice found on this device. Add one in the device's text-to-speech settings.");
+  synth.speak(u);
+}
+/* Recorded clips (audio/<id>.mp3) play first; the device voice is the fallback when a clip is not there. */
+var audioEl = null, audioMissing = {};
+function speak(text, k, btn, aid) {
+  if (audioEl) { audioEl.pause(); audioEl = null; }
+  if (synth) synth.cancel();
+  if (current) current.classList.remove("playing");
+  if (aid && !audioMissing[aid]) {
+    var a = new Audio("audio/" + aid + ".mp3");
+    a.playbackRate = slow ? 0.75 : 1;
+    audioEl = a; current = btn; btn.classList.add("playing");
+    a.onended = function () { btn.classList.remove("playing"); };
+    a.onerror = function () { btn.classList.remove("playing"); audioMissing[aid] = 1; speakTts(text, k, btn); };
+    var pr = a.play(); if (pr && pr.catch) pr.catch(function () {});
+    return;
+  }
+  speakTts(text, k, btn);
+}
+document.addEventListener("click", function (e) {
+  var b = e.target.closest ? e.target.closest(".spk") : null;
+  if (b) speak(b.getAttribute("data-say"), b.getAttribute("data-k"), b, b.getAttribute("data-audio"));
+});
+
+/* ---------- router, top bar, day picker ---------- */
+var curDay = 1;
+function go(h) { if (location.hash === "#" + h) route(); else location.hash = h; }
+function route() {
+  var h = (location.hash || "").replace("#", ""), m = /^day-(\d+)$/.exec(h);
+  closePicker();
+  if (h === "quiz") { showQuizSetup(); }
+  else { var d = m ? parseInt(m[1], 10) : 1; if (d < 1 || d > TOTAL_DAYS) d = 1; showDay(d); }
+  window.scrollTo(0, 0);
+}
+function setBar(isQuiz) {
+  var t = DAYS[curDay] ? DAYS[curDay].theme : "";
+  $("pickBtn").textContent = "Day " + curDay + (t ? " · " + t : "") + " ▾";
+  if (isQuiz) { $("quizBtn").setAttribute("aria-current", "page"); $("pickBtn").classList.remove("solid"); }
+  else { $("quizBtn").removeAttribute("aria-current"); $("pickBtn").classList.add("solid"); }
+}
+function buildPicker() {
+  var have = addedDays(), html = "";
+  for (var n = 1; n <= TOTAL_DAYS; n++) {
+    var d = DAYS[n];
+    html += '<button type="button" class="dbtn ' + (d ? "has" : "none") + '" data-day="' + n + '"><b>' + n + '</b><small>' + (d ? esc(d.theme) : "soon") + '</small></button>';
+  }
+  $("days").innerHTML = html;
+  $("pickNote").textContent = have.length + " of " + TOTAL_DAYS + " days are ready. Days marked \"soon\" are added when you ask for them in the Claude chat.";
+}
+function openPicker() { $("pickPanel").hidden = false; $("pickBtn").setAttribute("aria-expanded", "true"); var cur = document.querySelector('.dbtn[data-day="' + curDay + '"]'); [].forEach.call(document.querySelectorAll(".dbtn"), function (b) { b.removeAttribute("aria-current"); }); if (cur) cur.setAttribute("aria-current", "true"); }
+function closePicker() { $("pickPanel").hidden = true; $("pickBtn").setAttribute("aria-expanded", "false"); }
+$("pickBtn").addEventListener("click", function (e) { e.stopPropagation(); if ($("pickPanel").hidden) openPicker(); else closePicker(); });
+$("quizBtn").addEventListener("click", function () { go("quiz"); });
+$("days").addEventListener("click", function (e) { var b = e.target.closest(".dbtn"); if (b) go("day-" + b.getAttribute("data-day")); });
+document.addEventListener("click", function (e) { if (!$("pickPanel").hidden && !e.target.closest(".panel") && e.target !== $("pickBtn")) closePicker(); });
+document.addEventListener("keydown", function (e) { if (e.key === "Escape") closePicker(); });
+
+/* ---------- lesson view ---------- */
+function cell(k, word, p, w) {
+  return '<div class="cell" data-k="' + k + '" data-label="' + LANGS[k].name + '" lang="' + k + '">' + spk(word, k, undefined, w.id + "-" + k) +
+    '<div class="txt"><div class="w">' + esc(word) + '</div>' + (p ? '<div class="p">' + esc(p) + '</div>' : '') + '</div></div>';
+}
+function showDay(n) {
+  curDay = n; setBar(false);
+  var d = DAYS[n], v = $("view");
+  if (!d) {
+    v.innerHTML = '<header class="hd"><div class="kicker">Day ' + n + '</div><h1>Day ' + n + ' is not added yet</h1>' +
+      '<p class="sub">In the Claude chat, send <b>Day ' + n + '</b> and a theme you like (for example, Travel or Science). The ten words will appear here with speaker buttons.</p></header>' +
+      '<div class="card"><div>Ready now: ' + addedDays().map(function (x) { return '<a href="#day-' + x + '">Day ' + x + '</a>'; }).join(", ") + '.</div></div>';
+    return;
+  }
+  var rows = d.words.map(function (w, i) {
+    return '<div class="row"><span class="sl">' + (i + 1) + '</span>' + cell("en", w.en, "", w) +
+      '<span class="syl"><b>' + esc(w.syl) + '</b> (' + w.n + ')</span>' + cell("ta", w.ta[0], w.ta[1], w) + cell("fr", w.fr[0], w.fr[1], w) + cell("hi", w.hi[0], w.hi[1], w) + '</div>';
+  }).join("");
+  var sents = d.sentences.map(function (s) {
+    return '<div class="sent" lang="' + s.k + '"><div class="lab ' + s.k + '-c">' + LANGS[s.k].name + '</div>' + spk(s.text, s.k, "Hear the " + LANGS[s.k].name + " sentence", s.id + "-" + s.k) +
+      '<div class="txt"><div class="w">' + esc(s.text) + '</div>' + (s.note ? '<div class="m">' + esc(s.note) + '</div>' : '') + '</div></div>';
+  }).join("");
+  var prev = n > 1 ? '<a class="pill" href="#day-' + (n - 1) + '">← Day ' + (n - 1) + '</a>' : '<span></span>';
+  var next = n < TOTAL_DAYS ? '<a class="pill" href="#day-' + (n + 1) + '">Day ' + (n + 1) + ' →</a>' : '<span></span>';
+  v.innerHTML =
+    '<header class="hd"><div class="kicker">Day ' + n + ' · ' + esc(d.theme) + ' · Grade 7 CBSE</div><h1>' + esc(d.theme) + ' words</h1>' +
+    '<p class="sub">Ten keywords in English, Tamil, French and Hindi. Tap the speaker next to any word to hear it.</p>' +
+    '<div class="bar"><button class="pill" id="slow" type="button" aria-pressed="' + slow + '">Slow speech: ' + (slow ? "on" : "off") + '</button><div class="voices" id="voices"></div></div></header>' +
+    '<section class="sheet" aria-label="Day ' + n + ' keywords"><div class="row head" aria-hidden="true"><span>Sl</span><span>English</span><span>Syllables</span><span>Tamil</span><span>French</span><span>Hindi</span></div>' + rows + '</section>' +
+    '<section><h2>Example sentences</h2><div class="sentences">' + sents + '</div></section>' +
+    '<div class="pager">' + prev + next + '</div>';
+  $("slow").addEventListener("click", function () { slow = !slow; this.setAttribute("aria-pressed", slow); this.textContent = "Slow speech: " + (slow ? "on" : "off"); });
+  renderVoices();
+}
+
+/* ---------- quiz ---------- */
+var LEVELS = { 1: "Easy", 2: "Medium", 3: "Difficult", 4: "Challenge" };
+var TYPE_LABEL = { recognize: "Multiple choice", reverse: "Translate", pron: "Identify the pronunciation", match: "Match the following", typeMeaning: "Fill in the blank", typeFrench: "Fill in the blank", spelling: "Identify the correct word", syllables: "Multiple choice", unscramble: "Fill in the blank" };
+var WEIGHT = { recognize: 1, spelling: 1, syllables: 1, reverse: 2, pron: 3, match: 3, unscramble: 3, typeMeaning: 4, typeFrench: 5 };
+var PLANS = {
+  1: [["ta","recognize"],["ta","recognize"],["ta","reverse"],["fr","recognize"],["fr","recognize"],["fr","reverse"],["hi","recognize"],["hi","recognize"],["hi","reverse"],["en","spelling"],["en","spelling"],["en","syllables"]],
+  2: [["ta","recognize"],["ta","reverse"],["ta","match"],["fr","recognize"],["fr","reverse"],["fr","match"],["hi","recognize"],["hi","reverse"],["hi","match"],["en","spelling"],["en","syllables"],["en","unscramble"]],
+  3: [["ta","reverse"],["ta","pron"],["ta","typeMeaning"],["fr","reverse"],["fr","pron"],["fr","typeMeaning"],["hi","reverse"],["hi","pron"],["hi","typeMeaning"],["en","syllables"],["en","unscramble"],["en","unscramble"]],
+  4: [["ta","pron"],["ta","match"],["ta","typeMeaning"],["fr","pron"],["fr","match"],["fr","typeFrench"],["hi","pron"],["hi","match"],["hi","typeMeaning"],["en","spelling"],["en","unscramble"],["en","unscramble"]]
+};
+var Q = { level: 1, days: "all", mode: "all", qs: [], ans: {}, idx: 0 };
+
+function others(pool, w, fn, n) {
+  var seen = {}; seen[fn(w)] = 1; var out = [];
+  shuffle(pool).forEach(function (x) { var v = fn(x); if (!seen[v] && out.length < n) { seen[v] = 1; out.push(v); } });
+  return out;
+}
+function misspell(word) {
+  var w = word.toLowerCase(), set = {}, i, vowels = "aeiou";
+  for (i = 0; i < w.length - 1; i++) if (w[i] !== w[i + 1]) set[w.slice(0, i) + w[i + 1] + w[i] + w.slice(i + 2)] = 1;
+  for (i = 0; i < w.length; i++) set[w.slice(0, i) + w.slice(i + 1)] = 1;
+  for (i = 0; i < w.length; i++) set[w.slice(0, i + 1) + w[i] + w.slice(i + 1)] = 1;
+  for (i = 0; i < w.length; i++) if (vowels.indexOf(w[i]) >= 0) vowels.split("").forEach(function (v) { if (v !== w[i]) set[w.slice(0, i) + v + w.slice(i + 1)] = 1; });
+  delete set[w];
+  return shuffle(Object.keys(set).filter(function (x) { return x.length > 1; }));
+}
+function scramble(word) {
+  var w = word.toLowerCase(), s = w, tries = 0;
+  while (s === w && tries++ < 30) s = shuffle(w.split("")).join("");
+  return s;
+}
+function say(w, L) { return L === "en" ? { t: w.en, k: "en" } : { t: w[L][0], k: L }; }
+
+var MAKE = {
+  recognize: function (w, L, pool) {
+    var opts = shuffle([w.en].concat(others(pool, w, function (x) { return x.en; }, 3)));
+    return { prompt: 'What does this ' + LANGS[L].name + ' word mean?<br><span class="big" lang="' + L + '">' + esc(w[L][0]) + '</span>' + spk(w[L][0], L, undefined, w.id + "-" + L), kind: "mc", opts: opts, answer: w.en, words: [w],
+      explain: esc(w[L][0]) + ' (' + esc(w[L][1]) + ') means "' + esc(w.en) + '".' };
+  },
+  reverse: function (w, L, pool) {
+    var opts = shuffle([w[L][0]].concat(others(pool, w, function (x) { return x[L][0]; }, 3)));
+    return { prompt: 'Which ' + LANGS[L].name + ' word means <b>' + esc(w.en) + '</b>?', kind: "mc", opts: opts, answer: w[L][0], words: [w], optLang: L,
+      explain: '"' + esc(w.en) + '" in ' + LANGS[L].name + ' is ' + esc(w[L][0]) + ' (' + esc(w[L][1]) + ').' };
+  },
+  pron: function (w, L, pool) {
+    var opts = shuffle([w[L][1]].concat(others(pool, w, function (x) { return x[L][1]; }, 3)));
+    return { prompt: 'Which pronunciation matches this ' + LANGS[L].name + ' word?<br><span class="big" lang="' + L + '">' + esc(w[L][0]) + '</span>', kind: "mc", opts: opts, answer: w[L][1], words: [w],
+      explain: esc(w[L][0]) + ' is said ' + esc(w[L][1]) + ' and means "' + esc(w.en) + '".' };
+  },
+  typeMeaning: function (w, L) {
+    return { prompt: 'Type the English meaning of this ' + LANGS[L].name + ' word.<br><span class="big" lang="' + L + '">' + esc(w[L][0]) + '</span>' + spk(w[L][0], L, undefined, w.id + "-" + L), kind: "text", accept: [norm(w.en)], answer: w.en, words: [w],
+      explain: esc(w[L][0]) + ' (' + esc(w[L][1]) + ') means "' + esc(w.en) + '".' };
+  },
+  typeFrench: function (w) {
+    return { prompt: 'Type the French word for <b>' + esc(w.en) + '</b>. (Accents are optional.)', kind: "text", accept: [norm(w.fr[0])], answer: w.fr[0], words: [w],
+      explain: '"' + esc(w.en) + '" in French is ' + esc(w.fr[0]) + ' (' + esc(w.fr[1]) + ').' };
+  },
+  match: function (w, L, pool) {
+    var four = [w].concat(shuffle(pool.filter(function (x) { return x.en !== w.en; })).slice(0, 3));
+    return { prompt: 'Match each ' + LANGS[L].name + ' word with its English meaning.', kind: "match", pairs: four, opts: shuffle(four.map(function (x) { return x.en; })), pts: four.length, words: four,
+      explain: four.map(function (x) { return esc(x[L][0]) + ' = ' + esc(x.en); }).join("; ") + '.' };
+  },
+  spelling: function (w, L, pool) {
+    var wrong = misspell(w.en).slice(0, 3), right = w.en.toLowerCase();
+    return { prompt: 'Choose the correct spelling.', kind: "mc", opts: shuffle([right].concat(wrong)), answer: right, words: [w],
+      explain: 'The correct spelling is "' + esc(right) + '" (' + esc(w.syl) + ').' };
+  },
+  syllables: function (w) {
+    return { prompt: 'How many syllables are in <b>' + esc(w.en) + '</b>?', kind: "mc", opts: ["1", "2", "3", "4"], answer: String(w.n), words: [w],
+      explain: esc(w.en) + ' is split ' + esc(w.syl) + ', so it has ' + w.n + ' syllable' + (w.n > 1 ? "s" : "") + '.' };
+  },
+  unscramble: function (w) {
+    var s = scramble(w.en);
+    return { prompt: 'Unscramble the letters to make an English word from your lessons.<br><span class="big">' + esc(s.toUpperCase().split("").join(" ")) + '</span><br><small>Hint: ' + w.n + ' syllable' + (w.n > 1 ? "s" : "") + ', starts with "' + esc(w.en[0]) + '".</small>', kind: "text", accept: [norm(w.en)], answer: w.en, words: [w],
+      explain: 'The word is "' + esc(w.en) + '" (' + esc(w.syl) + ').' };
+  }
+};
+
+function usedSet() { var s = {}; try { var a = JSON.parse(store("dw_used") || "[]"); a.forEach(function (k) { s[k] = 1; }); } catch (e) {} return s; }
+function buildQuiz(level, dayList) {
+  var pool = []; dayList.forEach(function (d) { DAYS[d].words.forEach(function (w) { pool.push(w); }); });
+  var used = usedSet(), inQuiz = {}, qs = [];
+  PLANS[level].forEach(function (pl) {
+    var L = pl[0], type = pl[1];
+    var cands = pool.filter(function (w) { return !inQuiz[L + w.en] && (type !== "unscramble" || w.en.length >= 4); });
+    if (!cands.length) cands = pool.filter(function (w) { return type !== "unscramble" || w.en.length >= 4; });
+    var fresh = cands.filter(function (w) { return !used[type + "|" + L + "|" + w.en]; });
+    var w = shuffle(fresh.length ? fresh : cands)[0];
+    inQuiz[L + w.en] = 1;
+    var q = MAKE[type](w, L, pool);
+    q.lang = L; q.type = type; q.weight = WEIGHT[type]; q.pts = q.pts || 1; q.key = type + "|" + L + "|" + w.en;
+    qs.push(q);
+  });
+  qs.forEach(function (q, i) { q.i = i; });
+  qs.sort(function (a, b) { return a.weight - b.weight || a.i - b.i; });
+  qs.forEach(function (q, i) { q.id = i; });
+  return qs;
+}
+function score(q, a) {
+  if (q.kind === "mc") return a === q.answer ? 1 : 0;
+  if (q.kind === "text") return a && q.accept.indexOf(norm(a)) >= 0 ? 1 : 0;
+  var n = 0; (a || []).forEach(function (v, r) { if (v === q.pairs[r].en) n++; }); return n;
+}
+function quizDays() {
+  var all = addedDays();
+  if (Q.days === "all") return all;
+  return [parseInt(Q.days, 10)];
+}
+
+function showQuizSetup() {
+  setBar(true);
+  var have = addedDays();
+  var lv = [1, 2, 3, 4].map(function (n) { return '<button type="button" class="pill" data-lv="' + n + '" aria-pressed="' + (Q.level === n) + '">Level ' + n + ' · ' + LEVELS[n] + '</button>'; }).join("");
+  var dayOpts = '<option value="all"' + (Q.days === "all" ? " selected" : "") + '>All ready days (Day ' + have[0] + ' to ' + have[have.length - 1] + ')</option>' +
+    have.map(function (d) { return '<option value="' + d + '"' + (String(Q.days) === String(d) ? " selected" : "") + '>Day ' + d + ' only · ' + esc(DAYS[d].theme) + '</option>'; }).join("");
+  $("view").innerHTML =
+    '<header class="hd"><div class="kicker">Four-language vocabulary quiz</div><h1>Quiz time</h1>' +
+    '<p class="sub">Twelve questions across English, Tamil, French and Hindi, easy ones first. Answers stay hidden until you finish.</p></header>' +
+    '<div class="card setup">' +
+      '<div class="group"><span class="lbl">Difficulty</span><div class="chips" id="lvChips">' + lv + '</div></div>' +
+      '<div class="group"><label class="lbl" for="qDays">Words from</label><select id="qDays">' + dayOpts + '</select></div>' +
+      '<div class="group"><span class="lbl">How do you want to answer?</span><div class="chips" id="modeChips">' +
+        '<button type="button" class="pill" data-mode="one" aria-pressed="' + (Q.mode === "one") + '">One question at a time</button>' +
+        '<button type="button" class="pill" data-mode="all" aria-pressed="' + (Q.mode === "all") + '">All together</button></div></div>' +
+      '<div><button type="button" class="pill solid" id="startQuiz">Start quiz</button></div>' +
+    '</div>';
+  $("lvChips").addEventListener("click", function (e) { var b = e.target.closest("[data-lv]"); if (!b) return; Q.level = parseInt(b.getAttribute("data-lv"), 10); [].forEach.call(this.children, function (c) { c.setAttribute("aria-pressed", c === b); }); });
+  $("modeChips").addEventListener("click", function (e) { var b = e.target.closest("[data-mode]"); if (!b) return; Q.mode = b.getAttribute("data-mode"); [].forEach.call(this.children, function (c) { c.setAttribute("aria-pressed", c === b); }); });
+  $("qDays").addEventListener("change", function () { Q.days = this.value; });
+  $("startQuiz").addEventListener("click", startQuiz);
+}
+function startQuiz() { Q.qs = buildQuiz(Q.level, quizDays()); Q.ans = {}; Q.idx = 0; renderQuiz(); window.scrollTo(0, 0); }
+
+function qHtml(q, n) {
+  var a = Q.ans[q.id], body = "";
+  if (q.kind === "mc") {
+    body = '<div class="opts">' + q.opts.map(function (o, j) {
+      var lang = q.optLang ? ' lang="' + q.optLang + '"' : "";
+      return '<label class="opt"><input type="radio" name="q' + q.id + '" data-q="' + q.id + '" value="' + esc(o) + '"' + (a === o ? " checked" : "") + '><span' + lang + '>' + esc(o) + '</span></label>';
+    }).join("") + '</div>';
+  } else if (q.kind === "text") {
+    body = '<input type="text" id="q' + q.id + '" data-q="' + q.id + '" autocomplete="off" autocapitalize="off" spellcheck="false" value="' + esc(a || "") + '" aria-label="Your answer">';
+  } else {
+    body = '<div class="mrows">' + q.pairs.map(function (p, r) {
+      var cur = a && a[r] ? a[r] : "";
+      return '<div class="mrow"><span class="big" lang="' + q.lang + '">' + esc(p[q.lang][0]) + '</span><select data-q="' + q.id + '" data-r="' + r + '" aria-label="Meaning of ' + esc(p[q.lang][0]) + '"><option value="">Choose…</option>' +
+        q.opts.map(function (o) { return '<option value="' + esc(o) + '"' + (cur === o ? " selected" : "") + '>' + esc(o) + '</option>'; }).join("") + '</select></div>';
+    }).join("") + '</div>';
+  }
+  return '<fieldset class="qcard"><legend class="qmeta"><span class="tag ' + q.lang + '-c">' + LANGS[q.lang].name + '</span><span>Question ' + (n + 1) + ' of ' + Q.qs.length + ' · ' + TYPE_LABEL[q.type] + '</span></legend>' +
+    '<div class="qprompt">' + q.prompt + '</div>' + body + '</fieldset>';
+}
+function renderQuiz() {
+  setBar(true);
+  var qs = Q.qs, html = '<header class="hd"><div class="kicker">Level ' + Q.level + ' · ' + LEVELS[Q.level] + '</div><h1>Quiz</h1></header>';
+  if (Q.mode === "one") {
+    var last = Q.idx === qs.length - 1;
+    html += qHtml(qs[Q.idx], Q.idx) + '<div class="pager"><button type="button" class="pill" id="qBack"' + (Q.idx === 0 ? " disabled" : "") + '>← Back</button>' +
+      (last ? '<button type="button" class="pill solid" id="qSubmit">Submit answers</button>' : '<button type="button" class="pill solid" id="qNext">Next →</button>') + '</div>';
+  } else {
+    html += qs.map(function (q, n) { return qHtml(q, n); }).join("") + '<div class="pager"><span></span><button type="button" class="pill solid" id="qSubmit">Submit answers</button></div>';
+  }
+  $("view").innerHTML = html;
+  var v = $("view");
+  v.oninput = v.onchange = function (e) {
+    var t = e.target, id = t.getAttribute("data-q"); if (id === null) return; id = parseInt(id, 10);
+    if (t.hasAttribute("data-r")) { var arr = Q.ans[id] || (Q.ans[id] = []); arr[parseInt(t.getAttribute("data-r"), 10)] = t.value; }
+    else Q.ans[id] = t.value;
+  };
+  if ($("qNext")) $("qNext").onclick = function () { Q.idx++; renderQuiz(); window.scrollTo(0, 0); };
+  if ($("qBack")) $("qBack").onclick = function () { Q.idx--; renderQuiz(); window.scrollTo(0, 0); };
+  if ($("qSubmit")) $("qSubmit").onclick = showResults;
+}
+
+function showResults() {
+  var tot = 0, max = 0, per = {}, missed = {}, items = "";
+  ORDER.forEach(function (L) { per[L] = { got: 0, max: 0 }; missed[L] = []; });
+  var keys = [];
+  Q.qs.forEach(function (q, n) {
+    var a = Q.ans[q.id], got = score(q, a), mx = q.pts;
+    tot += got; max += mx; per[q.lang].got += got; per[q.lang].max += mx; keys.push(q.key);
+    var cls = got === mx ? "ok" : "no", st = got === mx ? "Correct" : (got > 0 ? "Partly correct (" + got + " of " + mx + ")" : "Not quite");
+    if (got < mx) q.words.forEach(function (w) { if (missed[q.lang].indexOf(w) < 0) missed[q.lang].push(w); });
+    var yours;
+    if (q.kind === "match") yours = q.pairs.map(function (p, r) { var v = a && a[r] ? a[r] : "(blank)"; return esc(p[q.lang][0]) + " → " + esc(v) + (v === p.en ? " ✓" : " ✗ (" + esc(p.en) + ")"); }).join("<br>");
+    else yours = esc(a ? a : "(no answer)");
+    var ans = q.kind === "match" ? "" : '<div>Correct answer: <b>' + esc(q.answer) + '</b></div>';
+    var sp = q.lang !== "en" && q.kind !== "match" ? spk(q.words[0][q.lang][0], q.lang, "Hear the " + LANGS[q.lang].name + " word", q.words[0].id + "-" + q.lang) : "";
+    items += '<div class="rev ' + cls + '"><div class="st">' + (n + 1) + '. ' + LANGS[q.lang].name + ' · ' + st + '</div><div>' + q.prompt.replace(/<br>.*$/, "").replace(/<[^>]+>/g, "") + '</div>' +
+      '<div>Your answer: ' + yours + '</div>' + ans + '<div class="ex">' + q.explain + '</div>' + sp + '</div>';
+  });
+  try { var u = usedSet(); keys.forEach(function (k) { u[k] = 1; }); store("dw_used", JSON.stringify(Object.keys(u).slice(-600))); } catch (e) {}
+  var pct = max ? Math.round(tot * 100 / max) : 0;
+  function f1(x) { return Math.round(x * 10) / 10; }
+  var best = null, worst = null;
+  ORDER.forEach(function (L) { var r = per[L].max ? per[L].got / per[L].max : 0; per[L].r = r; if (!best || r > per[best].r) best = L; if (!worst || r < per[worst].r) worst = L; });
+  var langCards = ORDER.map(function (L) {
+    var p = per[L], r = Math.round(p.r * 100);
+    return '<div class="lscore"><span class="' + L + '-c" style="font-weight:600">' + LANGS[L].name + '</span><b>' + f1(p.got) + ' / ' + p.max + '</b><div class="meter" aria-hidden="true"><i style="width:' + r + '%"></i></div><span class="p">' + r + '%</span></div>';
+  }).join("");
+  var tips = [];
+  ORDER.forEach(function (L) {
+    if (missed[L].length) tips.push('<b>' + LANGS[L].name + ':</b> revise ' + missed[L].map(function (w) { return esc(nat(w, L)) + (L === "en" ? "" : " (" + esc(w.en) + ")"); }).join(", ") + '. Press the speaker and say each word aloud three times.');
+  });
+  if (!tips.length) tips.push("No mistakes this time. Try the next level.");
+  tips.push("Use Slow speech on the lesson page to hear Tamil and Hindi sounds clearly.");
+  tips.push("Write each word you missed five times, with its meaning, in a small notebook.");
+  var band = pct >= 90 ? "Excellent work." : pct >= 75 ? "Good work." : pct >= 50 ? "Fair start. A little daily practice will lift this quickly." : "You need more practice. Go back to the daily lessons and try again.";
+  var nextLv = pct >= 80 && Q.level < 4 ? Q.level + 1 : Q.level;
+  var report = '<ul class="tips"><li>Level played: ' + Q.level + ' (' + LEVELS[Q.level] + '), ' + Q.qs.length + ' questions.</li>' +
+    '<li>Strongest language: <b>' + LANGS[best].name + '</b>. Needs the most work: <b>' + LANGS[worst].name + '</b>' + (per[best].r === per[worst].r ? " (all four are level)" : "") + '.</li>' +
+    '<li>' + band + (nextLv !== Q.level ? " You are ready for Level " + nextLv + "." : "") + '</li></ul>';
+  setBar(true);
+  $("view").innerHTML =
+    '<header class="hd"><div class="kicker">Quiz result · Level ' + Q.level + ' ' + LEVELS[Q.level] + '</div><h1>Your score</h1></header>' +
+    '<div class="card"><div class="score">' + f1(tot) + ' / ' + max + '</div><div class="sub">' + pct + '% overall</div></div>' +
+    '<section><h2>Marks by language</h2><div class="langs">' + langCards + '</div></section>' +
+    '<section><h2>Correct and incorrect answers</h2><div class="card">' + items + '</div></section>' +
+    '<section><h2>How to improve</h2><div class="card"><ul class="tips">' + tips.map(function (t) { return '<li>' + t + '</li>'; }).join("") + '</ul></div></section>' +
+    '<section><h2>Final performance report</h2><div class="card">' + report + '</div></section>' +
+    '<div class="pager"><button type="button" class="pill" id="again">Same level, new questions</button>' +
+    (nextLv !== Q.level ? '<button type="button" class="pill solid" id="nextLevel">Go to Level ' + nextLv + '</button>' : '<button type="button" class="pill solid" id="setupAgain">Change settings</button>') + '</div>';
+  $("again").onclick = startQuiz;
+  if ($("nextLevel")) $("nextLevel").onclick = function () { Q.level = nextLv; startQuiz(); };
+  if ($("setupAgain")) $("setupAgain").onclick = showQuizSetup;
+  window.scrollTo(0, 0);
+}
+
+/* ---------- start ---------- */
+buildPicker();
+window.addEventListener("hashchange", route);
+if (synth) {
+  if (synth.addEventListener) synth.addEventListener("voiceschanged", renderVoices); else synth.onvoiceschanged = renderVoices;
+  setTimeout(renderVoices, 800);
+}
+route();
+</script>
+
+</body></html>
