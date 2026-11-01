@@ -388,7 +388,7 @@ function buildPicker() {
     html += '<button type="button" class="dbtn ' + (d ? "has" : "none") + '" data-day="' + n + '"><b>' + n + '</b><small>' + (d ? esc(d.theme) : "soon") + '</small></button>';
   }
   $("days").innerHTML = html;
-  $("pickNote").textContent = have.length + " of " + TOTAL_DAYS + " days are ready. Days marked \"soon\" are added when you ask for them in the Claude chat.";
+  $("pickNote").textContent = have.length + " of " + TOTAL_DAYS + " days are ready. Days marked \"soon\" are added soon.";
 }
 function openPicker() { $("pickPanel").hidden = false; $("pickBtn").setAttribute("aria-expanded", "true"); var cur = document.querySelector('.dbtn[data-day="' + curDay + '"]'); [].forEach.call(document.querySelectorAll(".dbtn"), function (b) { b.removeAttribute("aria-current"); }); if (cur) cur.setAttribute("aria-current", "true"); }
 function closePicker() { $("pickPanel").hidden = true; $("pickBtn").setAttribute("aria-expanded", "false"); }
